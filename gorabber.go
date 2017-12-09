@@ -5,16 +5,19 @@ import (
     fb "github.com/huandu/facebook"
     _ "github.com/go-sql-driver/mysql"
     "database/sql"
+    "time"
 )
 
 func main() {
+
     var access_token = "EAAC9h4ZB7BUABAEqEDmxJZAEVT1LxyUlVdn2Wa1r1WDlMaANtURoOOK0XnsGo9aKuif8HdFUaL2xuoZAZC0VsWGXXsiCA1soWxpeJi8Q0K7jUJ6rzoz2j1SxAgYfFUdaO9rs4ZCOp1w3xvZBbpGUkZAQR5GjTcqhVIZD"
     //var path = "/694472636"
     var items []fb.Result
     var path = "/580099968808112/feed"
+    const longForm = "2006-01-02T15:04:05+0000"
 
     res, _ := fb.Get(path, fb.Params{
-        "limit": 500,
+        "limit": 25,
         "access_token": access_token,
     })
     //fmt.Printf("res object: %v", res)
@@ -27,10 +30,33 @@ func main() {
         return
     }
 
-    for i, item := range items {
-        fmt.Println(i, item["message"])
+    db, err := sql.Open("mysql", "mysql:mysql@/gorabber?charset=utf8")
+    checkErr(err)
+
+    for _, item := range items {
+        //fmt.Println(i, item["id"])
+
+        stmt, err := db.Prepare("INSERT posts SET group_id='580099968808112',fb_id=?,updated_at=?,message_text=?")
+        checkErr(err)
+
+        var timeStr = fmt.Sprintf("%v",item["updated_time"]);
+        updatedAt, _ := time.Parse(longForm, timeStr)
+
+        var messageStr = fmt.Sprintf("%v",item["message"]);
+        res, err := stmt.Exec(item["id"], updatedAt, messageStr)
+        checkErr(err)
+
+        id, err := res.LastInsertId()
+        checkErr(err)
+        fmt.Println(item["message"]);
+        fmt.Printf("Raw with ID %d inserted!\n", id)
+
         //updated_time, id
     }
+
+
+
+
 
     //fmt.Printf("%v", res)
     //fmt.Print(errno)
@@ -72,8 +98,17 @@ func main() {
 
 
     }
-// id,
-// group_id
-// fb_id
-// updated_at
-// message_text
+
+
+func checkErr(err error) {
+    if err != nil {
+        panic(err)
+    }
+}
+
+
+/*        id
+        group_id
+        fb_id
+        updated_at
+        message_text*/

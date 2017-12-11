@@ -1,0 +1,4 @@
++ 1. Don't save twice
++ 2. Actual flag
+3. Create a service for is_offer flag
+"se busca", "busco"
